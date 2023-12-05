@@ -11,6 +11,7 @@ df <- stems
 
 
 
+
 gal <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försök", na = ".") %>%
   filter(EXP == exp) %>%
   select(YTA, AR, UTF)  
@@ -29,14 +30,14 @@ area <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försök", na = ".") %>%
   
 
 
-source("function_ab_estimation.R")
-df_total <- fit_models(df)
+source("simple_function_ab_estimation_ar.R")
+df_total <- fit_simple_model(df)
 
 
 
 
 
-df1 <- left_join(df, df_total, by = c("YTA", "AR"))
+df1 <- left_join(df, df_total, by = c("AR"))
 df2 <- left_join(df1, beh, by = c("YTA")) %>%
   mutate(hest = a*D^b) %>% select(-a, -b)
 
@@ -112,6 +113,7 @@ for (i in seq(1, length(volume$AR), 2)){
 }
 volume
 ggplot(aes(x = AR, y = kvarvol), data = volume) + geom_line() + facet_wrap(YTA~BEH )
+
 
 
 #####################################################################################
@@ -242,7 +244,7 @@ hd
 rm(pri)
 pri <- left_join(res_antal, res_volume, by = c("YTA", "BEH", "AR"))
 pri <- left_join(pri, hd, by = c("YTA", "BEH", "AR"))
-pri <- left_join(pri, res_ba, by = c("YTA", "BEH", "AR")) %>% mutate(GALL = ifelse(baut > 1, 1, 0)) %>%
+pri <- left_join(pri, res_ba, by = c("YTA", "BEH", "AR")) %>% mutate(GALL = ifelse(volut > 1, 1, 0)) %>%
   select(YTA, BEH, AR, GALL, everything())
 
 
