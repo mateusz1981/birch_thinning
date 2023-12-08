@@ -1,4 +1,5 @@
-setwd("C:/Users/mali/OneDrive - Skogforsk/BJÖRK/Björk_gallrig")
+setwd("C:/Users/mali/OneDrive - Skogforsk/BJÖRK/Björk_gallrig/birch_thinning/")
+source("site_index_functions.R")
 
 exp = "S1325"
 
@@ -56,7 +57,7 @@ area <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försök", na = ".") %>%
   mutate(AREA = 10000/AREA)  
   
 
-
+library(minpack.lm)
 source("simple_function_ab_estimation_ar.R")
 df_total <- fit_simple_model(df)
 
@@ -131,7 +132,7 @@ volume[is.na(volume)] <- 0
 
 #to result table##########################
 res_volume <- volume %>% select(YTA, BEH, AGE, sumvol, sumvolGall, kvarvol, utgall, totvol) %>%
-  rename(volfg = sumvol, volut = sumvolGall, voleg = kvarvol, volut_cum = utgall, Totvol = totvol)
+  rename(volfg = sumvol, volut = sumvolGall, voleg = kvarvol, volut_cum = utgall, Totvol = totvol) %>% mutate(MAI = Totvol/AGE)
 
 ##############volym figure###########################
 volume
@@ -282,7 +283,8 @@ rm(pri)
 pri <- left_join(res_antal, res_volume, by = c("YTA", "BEH", "AGE"))
 pri <- left_join(pri, hd, by = c("YTA", "BEH", "AGE"))
 pri <- left_join(pri, res_ba, by = c("YTA", "BEH", "AGE")) %>% mutate(GALL = ifelse(volut > 1, 1, 0)) %>%
-  select(YTA, BEH, AGE, GALL, everything()) %>% mutate(MAI = Totvol/AGE)
+  select(YTA, BEH, AGE, GALL, everything()) %>% 
+  mutate(SI = calculate_si(mh_eg/10, AGE, species))
 
 pri
 write.csv(pri %>% mutate_if(is.numeric, list(~format(., nsmall = 1))), paste(exp, "_results.csv", sep = ""), row.names = F, fileEncoding = "UTF-8" )
