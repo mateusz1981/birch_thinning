@@ -2,24 +2,47 @@
 library(shiny)
 library(readxl)
 library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(minpack.lm)
+library(minpack.lm)
+source("simple_function_ab_estimation_ar.R")
+
+
 # ... (other libraries used in your script)
 
 # Define UI
 ui <- fluidPage(
-  titlePanel("Your Analysis App"),
+  titlePanel("Extract summary data "),
+ 
   
   sidebarLayout(
     sidebarPanel(
+      
+    
+      
       # Input for experiment ID
-      textInput("exp_id", "Experiment ID:", value = "S1325"),
+      textInput("exp_id", "Write the Experiment ID ex:", value = "S1325"),
       
       # Button to trigger analysis
-      actionButton("run_analysis", "Run Analysis")
+      actionButton("run_analysis", "Run Analysis"),
+      
+      # Text about version
+      p(),
+      p("Version: 1.0"),
+      
+      # Text about developer
+      p("Developer: Mateusz Liziniewicz"),
+      
     ),
     
     mainPanel(
       # Output for displaying results
-      textOutput("results")
+      textOutput("results"), 
+      
+      tableOutput("pri_table"),
+      
+      plotOutput("my_plot")
     )
   )
 )
@@ -34,14 +57,15 @@ server <- function(input, output) {
     setwd("C:/Users/mali/OneDrive - Skogforsk/BJÖRK/Björk_gallrig/birch_thinning/")
     source("site_index_functions.R")
     
-    exp = "S1325"
     
-    year <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
+    
+    year1 <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
       filter(Exp == exp)
     
-    year <- year$Planteringsar
+    year <- year1$Planteringsar
+    experiment_name <-paste(year1$Fsk_nummer, " / ", year1$Name, sep = "")
     
-    
+    print(experiment_name)
     library(readxl)
     library(tidyverse)
     df <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Data", na = ".") %>%
@@ -114,7 +138,7 @@ server <- function(input, output) {
       
       vol <- ifelse(TRSL == 30,
                     (10^(-0.89363) * D^2.23818 * (D + 20.0)^(-1.06930) * H^6.02015 * (H - 1.3)^(-4.51472))/1000,
-                    ifelse(TRSL == 20,
+                    ifelse(TRSL == 20|TRSL == 26,
                            10^(-1.02039) * D^2.00128 * (D + 20)^(-0.47473) * H^2.87128 * (H - 1.3)^(-1.61083)/1000,
                            NA))
       
@@ -181,6 +205,10 @@ server <- function(input, output) {
     
     
     #####################################################################################
+    
+    #### top height #############
+    htoh <- df2 %>% group_by(YTA, AGE) %>% top_n(5, wt = D) %>%
+      summarise(HtOH = mean(hest, na.rm = T))
     
     #############basal area##############################
     basalarea <- left_join(kvar %>% select(-sumvol), utgall %>% select(-sumvolGall), by = c("YTA", "BEH", "AGE")) %>% ungroup() %>%
@@ -288,40 +316,105 @@ server <- function(input, output) {
       summarise(mh_fg = mean(hest, na.rm = T), md_fg = mean(D, na.rm = T)) 
     
     
-    #thinned = 0 and unthinnded = 1
-    res_height_diameter<- df2 %>% group_by(YTA, BEH, AGE, MORT3) %>%
-      summarise(mh = round(mean(hest, na.rm = T), 0), md = round(mean(D, na.rm = T), 0)) %>%
-      filter(!is.na(MORT3))
     
+    source("process_diameter_height_functions.R")
     #height
-    hh <- reshape2::dcast(res_height_diameter, YTA + BEH + AGE ~ MORT3, value.var = "mh")
+    # process_height_data <- function(df) {
+    #   
+    #   
+    #   
+    #   
+    #   #thinned = 0 and unthinnded = 1
+    #   res_height_diameter<- df2 %>% group_by(YTA, BEH, AGE, MORT3) %>%
+    #     summarise(mh = round(mean(hest, na.rm = T), 0), md = round(mean(D, na.rm = T), 0)) %>%
+    #     filter(!is.na(MORT3))
+    #   
+    #   #height
+    #   hh <- reshape2::dcast(res_height_diameter, YTA + BEH + AGE ~ MORT3, value.var = "mh")
+    #   
+    #   names(hh)[names(hh)== "0"] <- "mh_ut" #removed in thinning
+    #   names(hh)[names(hh)=="1"] <- "mh_eg" # left in stand'
+    #   names(hh)[names(hh)=="5"] <- "mh_dod" # left in stand'
+    #   
+    #   
+    #   if (!all(c("utgall_n", "n", "dod_n") %in% names(hh))) {
+    #     if (!"mh_ut" %in% names(hh)) {
+    #       hh <- hh %>% mutate(mh_ut = 0)
+    #     }
+    #     if (!"mh_dod" %in% names(hh)) {
+    #       hh <- hh %>% mutate(mh_dod = 0)
+    #     }
+    #   }
+    #   
+    #   hh[is.na(hh)] <- "0"
+    #   
+    #   return(hh)
+    # }
     
-    names(hh)[names(hh)== "0"] <- "mh_ut" #removed in thinning
-    names(hh)[names(hh)=="1"] <- "mh_eg" # left in stand'
-    hh[is.na(hh)] <- "0"
+    hh <- process_height_data(df2)
     hh
     #diameter
-    dd <- reshape2::dcast(res_height_diameter, YTA + BEH + AGE ~ MORT3, value.var = "md")
-    names(dd)[names(dd)== "0"] <- "md_ut" #removed in thinning
-    names(dd)[names(dd)=="1"] <- "md_eg" # left in stand'
+    # process_diameter_data <- function(df) {
+    #   
+    #   
+    #   
+    #   
+    #   #thinned = 0 and unthinnded = 1
+    #   res_height_diameter<- df %>% group_by(YTA, BEH, AGE, MORT3) %>%
+    #     summarise(mh = round(mean(hest, na.rm = T), 0), md = round(mean(D, na.rm = T), 0)) %>%
+    #     filter(!is.na(MORT3))
+    #   
+    #   #height
+    #   hh <- reshape2::dcast(res_height_diameter, YTA + BEH + AGE ~ MORT3, value.var = "md")
+    #   
+    #   names(hh)[names(hh)== "0"] <- "md_ut" #removed in thinning
+    #   names(hh)[names(hh)=="1"] <- "md_eg" # left in stand'
+    #   names(hh)[names(hh)=="5"] <- "md_dod" # left in stand'
+    #   
+    #   
+    #   if (!all(c("md_ut", "md_ut", "md_dod") %in% names(hh))) {
+    #     if (!"md_ut" %in% names(hh)) {
+    #       hh <- hh %>% mutate(md_ut = 0)
+    #     }
+    #     if (!"md_dod" %in% names(hh)) {
+    #       hh <- hh %>% mutate(md_dod = 0)
+    #     }
+    #   }
+    #   
+    #   hh[is.na(hh)] <- "0"
+    #   
+    #   return(hh)
+    # }
     
-    dd[is.na(dd)] <- "0"
     
+    dd <- process_diameter_data(df2)
+    
+    
+    #merging results
     hd <- left_join(res_height_diameter_fg, hh, by = c("YTA", "BEH", "AGE"))
     hd <- left_join(hd, dd, by = c("YTA", "BEH", "AGE")) %>% 
-      select("YTA", "BEH", "AGE", "mh_fg", "mh_ut", "mh_eg", "md_fg", "md_ut", "md_eg")
-    hd
+      select("YTA", "BEH", "AGE", "mh_fg", "mh_ut", "mh_eg", "mh_dod", "md_fg", "md_ut", "md_eg", "md_dod")
     
     rm(pri)
     pri <- left_join(res_antal, res_volume, by = c("YTA", "BEH", "AGE"))
     pri <- left_join(pri, hd, by = c("YTA", "BEH", "AGE"))
     pri <- left_join(pri, res_ba, by = c("YTA", "BEH", "AGE")) %>% mutate(GALL = ifelse(volut > 1, 1, 0)) %>%
       select(YTA, BEH, AGE, GALL, everything()) %>% 
-      mutate(SI = calculate_si(mh_eg/10, AGE, species))
+      left_join(., htoh, by = c("YTA", "AGE")) %>%
+      mutate(SI = calculate_si(HtOH/10, AGE, species))
+    
     
     pri
     write.csv(pri %>% mutate_if(is.numeric, list(~format(., nsmall = 1))), paste(exp, "_results.csv", sep = ""), row.names = F, fileEncoding = "UTF-8" )
     
+    #table to display in shiny app window
+    output$pri_table <- renderTable({
+      pri %>% mutate(AGE = factor(AGE), YTA = factor(YTA), GALL = factor(GALL)) %>% mutate(across(where(is.numeric), ~round(., digits = 1)))
+    })
+    
+    
+    
+    #table to save as a result
     output$results <- renderText({
       write.csv(
         pri %>% mutate_if(is.numeric, list(~format(., nsmall = 1))),
@@ -329,8 +422,17 @@ server <- function(input, output) {
         row.names = FALSE,
         fileEncoding = "UTF-8"
       )
-      "Analysis completed. Results saved as CSV."
+      print(paste(experiment_name, " / Analysis completed. Results saved as CSV.", sep = ""))
     })
+    
+    
+    output$my_plot <- renderPlot({
+      ggplot(aes(x = AGE, y = neg), data = antal1) + geom_line() + facet_wrap(YTA~BEH ) +
+        theme_bw() +
+        ggtitle("Number of stems over time")
+      
+    })
+    
   })
 }
 

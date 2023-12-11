@@ -1,3 +1,8 @@
 add experiment level to be able to summarise for several experiments at once
 
-do a figure and calculations of mai, considering establishment year and year of measurement
+DONE <- do a figure and calculations of mai, considering establishment year and year of measurement
+
+App <- first version developed
+
+add buttons to save figures
+
