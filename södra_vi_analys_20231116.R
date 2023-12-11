@@ -1,7 +1,7 @@
 setwd("C:/Users/mali/OneDrive - Skogforsk/BJÖRK/Björk_gallrig/birch_thinning/")
 source("site_index_functions.R")
 
-exp = "S1325"
+exp = "F1275"
 library(tidyverse)
 library(readxl)
 year <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
