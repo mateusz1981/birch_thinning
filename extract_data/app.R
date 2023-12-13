@@ -21,8 +21,9 @@ ui <- fluidPage(
   
   sidebarLayout(
     sidebarPanel(
+      p("Tillgängliga försök i databas (trädslag/nummer/namn):"),
       
-    
+      uiOutput("lista_med_fsk"),
       
       # Input for experiment ID
       textInput("exp_id", "Write the Experiment ID ex:", value = "S1325"),
@@ -30,10 +31,13 @@ ui <- fluidPage(
       # Button to trigger analysis
       actionButton("run_analysis", "Run Analysis"),
       
-      tags$img(src = "skogforsk logo.jfif"),
+      #tags$img(src = "skogforsk logo.jfif"),
       
       
       # Text about version
+      
+      
+      downloadButton("downloadCSV", "Download CSV"),
       p(),
       p("Version: 1.0"),
       
@@ -56,18 +60,44 @@ ui <- fluidPage(
 # Define server
 server <- function(input, output) {
   
+ 
+  
+  output$lista_med_fsk <- renderUI({
+    lista_fsk <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
+      mutate(fsk = paste(Trsl, Fsk_nummer, Name, sep = " / ")) %>%
+      select(fsk) %>%
+      distinct()
+    # Replace this with your actual list or dynamic list generation logic
+    my_list <- c(lista_fsk$fsk)
+    
+    
+    # Render the list as an HTML list
+    tags$ul(
+      lapply(my_list, function(item) {
+        tags$li(item)
+      })
+    )
+  })
+  
+  
+  
   observeEvent(input$run_analysis, {
     # Read experiment ID from input
     exp <- input$exp_id
     
-    
+    lista_fsk <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
+      mutate(fsk = paste(Fsk_nummer, Name, sep = " / ")) %>%
+      select(fsk) %>%
+      distinct()
+      
+    print(lista_fsk)
    
     year1 <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
       filter(Exp == exp)
     
     year <- year1$Planteringsar
     experiment_name <-paste(year1$Fsk_nummer, " / ", year1$Name, sep = "")
-    print(experiment_name)
+    print(cat("Analyseras: ", experiment_name))
     
     library(readxl)
     library(tidyverse)
@@ -239,23 +269,10 @@ server <- function(input, output) {
       rename(bafg = sumba, baut = utgall_ba, baeg = kvarba, baut_cum = cumutgall_ba) %>%
       select(YTA, BEH, AGE, bafg, baut, dodba, baeg, baut_cum, Totprod_ba)
     
-    # 
-    # 
-    # basalarea <- left_join(kvar %>% select(-sumvol), utgall %>% select(-sumvolGall), by = c("YTA", "BEH", "AGE")) %>% ungroup() %>%
-    #   mutate(sumbaGall  = ifelse(is.na(sumbaGall ), 0, sumbaGall )) %>%
-    #   mutate(kvarba = sumba - sumbaGall) %>% group_by(YTA, BEH) %>%
-    #   mutate(utgallba = cumsum(sumbaGall)) %>%
-    #   mutate(totba = kvarba + utgallba) %>%
-    #   filter(!is.na(totba) & sumba != 0)
-    # 
-    # 
-    # 
-    # res_ba <- basalarea %>% select(YTA, BEH, AGE, sumba, sumbaGall, kvarba, utgallba, totba) %>%
-    #   rename(bafg = sumba, baut = sumbaGall, baeg = kvarba, baut_cum = utgallba, Totba = totba)
     
     basalarea <- basalarea[rep(seq_len(nrow(basalarea)), each = 2), ]
     
-    head(basalarea)
+  
     
     ##BA figure##################
     for (i in seq(1, length(basalarea$AGE), 2)){
@@ -432,9 +449,18 @@ server <- function(input, output) {
     output$my_plot <- renderPlot({
       ggplot(aes(x = AGE, y = neg), data = antal1) + geom_line() + facet_wrap(YTA~BEH ) +
         theme_bw() +
-        ggtitle("Number of stems over time")
+        ggtitle("Number of stems over time")})
+
       
-    })
+    output$downloadCSV <- downloadHandler(
+        filename = function() {
+          paste(input$exp_id, "_results.csv", sep = "")
+        },
+        content = function(file) {
+          write.csv(pri, file, row.names = FALSE)
+        }
+      )      
+    
     
   })
 }
