@@ -99,8 +99,6 @@ server <- function(input, output) {
     experiment_name <-paste(year1$Fsk_nummer, " / ", year1$Name, sep = "")
     print(cat("Analyseras: ", experiment_name))
     
-    library(readxl)
-    library(tidyverse)
     df <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Data", na = ".") %>%
       filter(Exp == exp) %>% mutate(AGE = AR - year + 1)
     
@@ -171,7 +169,7 @@ server <- function(input, output) {
       
       vol <- ifelse(TRSL == 30,
                     (10^(-0.89363) * D^2.23818 * (D + 20.0)^(-1.06930) * H^6.02015 * (H - 1.3)^(-4.51472))/1000,
-                    ifelse(TRSL %in% c(20, 21),
+                    ifelse(TRSL %in% c(20, 26),
                            10^(-1.02039) * D^2.00128 * (D + 20)^(-0.47473) * H^2.87128 * (H - 1.3)^(-1.61083)/1000,
                            NA))
       
