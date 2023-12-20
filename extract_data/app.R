@@ -228,11 +228,11 @@ server <- function(input, output) {
     
     #to result table##########################
     res_volume <- volume %>% mutate(sumvol = kvarvol + as.numeric(dodvol) + utgall) %>% 
-      group_by(YTA, BEH, AGE) %>% mutate(cumutgall = cumsum(utgall) + cumsum(dodvol), Totprod = sumvol + cumutgall) %>%
+      group_by(YTA, BEH) %>% mutate(cumutgall = cumsum(utgall) + cumsum(dodvol)) %>%
+      group_by(YTA, BEH, AGE) %>% mutate(Totprod = sumvol + cumutgall) %>%
       select(YTA, BEH, AGE, kvarvol , utgall, dodvol, sumvol, cumutgall, Totprod) %>%
       rename(volfg = sumvol, volut = utgall, voleg = kvarvol, volut_cum = cumutgall) %>% mutate(MAI = Totprod/AGE) %>%
       select(YTA, BEH, AGE, volfg, volut, dodvol, voleg, volut_cum, Totprod, MAI)
-    
     ##############volym figure###########################
     volume
     volume <- volume[rep(seq_len(nrow(volume)), each = 2), ]
