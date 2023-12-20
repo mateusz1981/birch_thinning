@@ -426,7 +426,8 @@ server <- function(input, output) {
     
     
     output$pri_table <- renderTable({
-      pri %>% mutate(AGE = factor(AGE), YTA = factor(YTA), GALL = factor(GALL)) %>% mutate(across(where(is.numeric), ~round(., digits = 1)))
+      pri %>% mutate(AGE = factor(AGE), YTA = factor(YTA), GALL = factor(GALL)) %>% mutate(across(where(is.numeric), ~round(., digits = 1))) %>%
+        select(YTA, BEH, AGE, Totprod)
     })
     
     
