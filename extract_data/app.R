@@ -15,57 +15,66 @@ source("site_index_functions.R")
 # ... (other libraries used in your script)
 
 # Define UI
-ui <- fluidPage(
-  titlePanel("Extract summary data "),
- 
+ui <- navbarPage(
+  title = "My Shiny App",
+  tabPanel("Extract summary data",
+           fluidPage(
+             p("Tillgängliga försök i databas (trädslag/nummer/namn):"),
+             uiOutput("lista_med_fsk"),
+             textInput("exp_id", "Write the Experiment ID ex:", value = "S1325"),
+             actionButton("run_analysis", "Run Analysis"),
+             downloadButton("downloadCSV", "Download CSV"),
+             p(),
+             verbatimTextOutput("analysis_message")
+           )),
   
-  sidebarLayout(
-    sidebarPanel(
-      p("Tillgängliga försök i databas (trädslag/nummer/namn):"),
-      
-      uiOutput("lista_med_fsk"),
-      
-      # Input for experiment ID
-      textInput("exp_id", "Write the Experiment ID ex:", value = "S1325"),
-      
-      # Button to trigger analysis
-      actionButton("run_analysis", "Run Analysis"),
-      
-      #tags$img(src = "skogforsk logo.jfif"),
-      
-      
-      # Text about version
-      
-      
-      downloadButton("downloadCSV", "Download CSV"),
-      p(),
-      p("Version: 1.0"),
-      
-      # Text about developer
-      p("Developer: Mateusz Liziniewicz"),
-      
-    ),
-    
-    mainPanel(
-      # Output for displaying results
-      textOutput("results"), 
-      
-      tableOutput("pri_table"),
-      
-      plotOutput("my_plot"),
-      
-      plotOutput("volume_plot"),
-      plotOutput("TotVol"),
-      plotOutput("MAI")
-    )
+  tabPanel("Display tables",
+           fluidPage(
+             textOutput("results"), 
+             tableOutput("pri_table")
+           )
+  ),
+  
+  tabPanel("Plots",
+           plotOutput("my_plot"),
+           plotOutput("volume_plot"),
+           plotOutput("TotVol"),
+           plotOutput("MAI")
   )
 )
 
+
+
 # Define server
-server <- function(input, output) {
+server <- function(input, output, session) {
   
  
+  analysis_result <- reactiveVal("Analysis progress")
   
+  # Function to perform the analysis
+  performAnalysis <- function(exp_id) {
+    # Replace this with your actual analysis logic
+    result <- paste("Analysis completed for Experiment ID:", exp_id)
+    analysis_result(result)
+  }
+  
+  # Render dynamic UI based on input$lista_med_fsk
+  output$lista_med_fsk <- renderUI({
+    # Replace this with your dynamic UI logic
+    # For example, you can use selectInput or textOutput
+    textInput("dynamic_input", "Dynamic Input:")
+  })
+  
+  # React to the "Run Analysis" button click
+  observeEvent(input$run_analysis, {
+    exp_id <- input$exp_id
+    performAnalysis(exp_id)
+  })
+  
+  # Display the analysis message
+  output$analysis_message <- renderPrint({
+    analysis_result()
+  })
   output$lista_med_fsk <- renderUI({
     lista_fsk <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
       mutate(fsk = paste(Trsl, Fsk_nummer, Name, sep = " / ")) %>%
@@ -484,7 +493,9 @@ server <- function(input, output) {
         content = function(file) {
           write.csv(pri, file, row.names = FALSE)
         }
-      )      
+      )
+    
+
     
     
   })
