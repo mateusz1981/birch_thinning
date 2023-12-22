@@ -82,7 +82,7 @@ vol_calc <- function(D, H, TRSL = 10, na.rm = FALSE) {
   
   vol <- ifelse(TRSL == 30,
                 (10^(-0.89363) * D^2.23818 * (D + 20.0)^(-1.06930) * H^6.02015 * (H - 1.3)^(-4.51472))/1000,
-                ifelse(TRSL %in% c(20, 21),
+                ifelse(TRSL %in% c(20, 26),
                        10^(-1.02039) * D^2.00128 * (D + 20)^(-0.47473) * H^2.87128 * (H - 1.3)^(-1.61083)/1000,
                        NA))
   
@@ -153,7 +153,7 @@ volume <- volume[rep(seq_len(nrow(volume)), each = 2), ]
 for (i in seq(1, length(volume$AGE), 2)){
   volume$kvarvol[i] = volume$kvarvol[i] + volume$utgall[i] + volume$dodvol[i]
 }
-
+volume
 ggplot(aes(x = AGE, y = kvarvol), data = volume) + geom_line() + geom_point() + facet_wrap(YTA~BEH )
 
 

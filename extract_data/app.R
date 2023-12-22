@@ -52,7 +52,11 @@ ui <- fluidPage(
       
       tableOutput("pri_table"),
       
-      plotOutput("my_plot")
+      plotOutput("my_plot"),
+      
+      plotOutput("volume_plot"),
+      plotOutput("TotVol"),
+      plotOutput("MAI")
     )
   )
 )
@@ -229,7 +233,7 @@ server <- function(input, output) {
     #to result table##########################
     res_volume <- volume %>% mutate(sumvol = kvarvol + as.numeric(dodvol) + utgall) %>% 
       group_by(YTA, BEH) %>% mutate(cumutgall = cumsum(utgall) + cumsum(dodvol)) %>%
-      group_by(YTA, BEH, AGE) %>% mutate(Totprod = sumvol + cumutgall) %>%
+      group_by(YTA, BEH, AGE) %>% mutate(Totprod = sumvol + cumutgall - utgall - dodvol) %>%
       select(YTA, BEH, AGE, kvarvol , utgall, dodvol, sumvol, cumutgall, Totprod) %>%
       rename(volfg = sumvol, volut = utgall, voleg = kvarvol, volut_cum = cumutgall) %>% mutate(MAI = Totprod/AGE) %>%
       select(YTA, BEH, AGE, volfg, volut, dodvol, voleg, volut_cum, Totprod, MAI)
@@ -427,7 +431,8 @@ server <- function(input, output) {
     
     
     output$pri_table <- renderTable({
-      pri %>% mutate(AGE = factor(AGE), YTA = factor(YTA), GALL = factor(GALL)) %>% mutate(across(where(is.numeric), ~round(., digits = 1))) 
+      pri %>% mutate(AGE = factor(AGE), YTA = factor(YTA), GALL = factor(GALL)) %>% mutate(across(where(is.numeric), ~round(., digits = 1))) %>%
+        select(YTA, BEH, AGE, GALL, HtOH, SI, md_eg, mh_eg, neg, baeg, voleg, volut, volut_cum, Totprod, MAI)
     })
     
     
@@ -436,7 +441,7 @@ server <- function(input, output) {
     #table to save as a result
     output$results <- renderText({
       write.csv(
-        pri %>% mutate_if(is.numeric, list(~format(., nsmall = 1))),
+        pri %>% mutate_if(is.numeric, list(~format(., nsmall = 0))),
         paste(exp, "_results.csv", sep = ""),
         row.names = FALSE,
         fileEncoding = "UTF-8"
@@ -446,10 +451,31 @@ server <- function(input, output) {
     
     
     output$my_plot <- renderPlot({
-      ggplot(aes(x = AGE, y = neg), data = antal1) + geom_line() + facet_wrap(YTA~BEH ) +
+      ggplot(aes(x = AGE, y = neg), data = antal1) + geom_line(aes(color = BEH)) + facet_wrap(YTA~BEH ) +
         theme_bw() +
-        ggtitle("Number of stems over time")})
+        ggtitle("Number of stems over time") +
+        xlab("Ålder (År)") + ylab("Antal träd")})
+    
+    
+    output$volume_plot <- renderPlot({
+      ggplot(aes(x = AGE, y = kvarvol), data = volume) + geom_line(aes(color = BEH)) + facet_wrap(YTA~BEH ) +
+        theme_bw() +
+        ggtitle("Volume production") +
+        xlab("Ålder (År)") + ylab("Volume m^3ha")})
+    
+    
+    output$TotVol <- renderPlot({
+      ggplot(aes(x = AGE, y = Totprod), data = pri) + geom_line(aes(color = BEH)) + facet_wrap(YTA~BEH ) +
+        theme_bw() +
+        ggtitle("Total volume production") +
+        xlab("Ålder (År)") + ylab("Volume m^3/ha")})
 
+    
+    output$MAI <- renderPlot({
+      ggplot(aes(x = AGE, y = MAI), data = pri) + geom_line(aes(color = BEH)) + facet_wrap(YTA~BEH ) +
+        theme_bw() +
+        ggtitle("Volume MAI") +
+        xlab("Ålder (År)") + ylab("Volume m^3/ha/år")})
       
     output$downloadCSV <- downloadHandler(
         filename = function() {
