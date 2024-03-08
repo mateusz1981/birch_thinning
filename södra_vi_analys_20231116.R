@@ -1,7 +1,7 @@
 setwd("C:/Users/mali/OneDrive - Skogforsk/BJÖRK/Björk_gallrig/birch_thinning/")
 source("site_index_functions.R")
 
-exp = "F1275"
+exp = "F1247"
 library(tidyverse)
 library(readxl)
 year <- read_excel("DB_S1325_SödraVi.xlsx", sheet = "Försökmeta", na = ".") %>%
@@ -225,6 +225,9 @@ ggplot(aes(x = AGE, y = kvarba, group = YTA, color = factor(BEH)), data = basala
 # Example usage:
 antal1 <- process_antal_data(df2)
 
+
+antal1 %>% filter(YTA == 1)
+
 res_antal <- antal1
 antal1 <- antal1[rep(seq_len(nrow(antal1)), each = 2), ]
 antal1[is.na(antal1)] <- 0
@@ -291,7 +294,7 @@ process_height_data <- function(df) {
 }
 
 hh <- process_height_data(df2)
-
+hh
 #diameter
 process_diameter_data <- function(df) {
   
@@ -329,7 +332,7 @@ process_diameter_data <- function(df) {
 dd <- process_diameter_data(df2)
 
 
-rm(pri)
+dd
 #merging results
 hd <- left_join(res_height_diameter_fg, hh, by = c("YTA", "BEH", "AGE"))
 hd <- left_join(hd, dd, by = c("YTA", "BEH", "AGE")) %>% 
@@ -347,6 +350,6 @@ pri <- left_join(pri, res_ba, by = c("YTA", "BEH", "AGE")) %>% mutate(GALL = ife
   mutate(SI = calculate_si(HtOH/10, AGE, species))
 
 
-pri
+pri %>% filter(YTA == 13)
 write.csv(pri %>% mutate_if(is.numeric, list(~format(., nsmall = 1))), paste(exp, "_results.csv", sep = ""), row.names = F, fileEncoding = "UTF-8" )
 
